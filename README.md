@@ -1,5 +1,6 @@
-# サンプル（プロダクト名）
-オモビュー
+# オモビュー
+
+![Demo](https://github.com/jphacks/KB_02/raw/master/source/movie.gif)
 
 ## 製品概要
 その場の"フンイキ"を可視化する, 拡張現実アプリです. 実装先として, googleglass, smart eyeglassなどの眼鏡型デバイス, あるいはロボットの視覚を想定しています. 
