@@ -8,8 +8,8 @@ class OmoroiData(object):
         self.speed = 0
         self.pos = 0
 
-        self.k = 0.05
-        self.g = 0.25
+        self.k = 0.2
+        self.g = 0.5
 
         self.omoroi_max = 10.0
         self.omoroi_min = 0.0
