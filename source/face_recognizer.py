@@ -107,14 +107,14 @@ class FaceRecognizer(object):
             smile_rects = self.get_features(face_image, smile_feature_path, min_neighbors=1,min_size=(int(face.geoinfo.length[0]*0.2), int(face.geoinfo.length[1]*0.2)))
 
             #[For debug]認識している笑顔の唇の枠表示
-            for smile_rect in smile_rects:
-                _rect_parallel_translation(smile_rect,face.geoinfo.coordinates[0])
-                _rect_parallel_translation(smile_rect,(0,face.geoinfo.length[1]/2))
-                smile_geoinfo = GeoInfo(smile_rect)
-                cv2.rectangle(enclosed_faces,
-                              smile_geoinfo.coordinates[0],
-                              smile_geoinfo.coordinates[1],
-                              (0,0,255), thickness=3)
+            #for smile_rect in smile_rects:
+            #    _rect_parallel_translation(smile_rect,face.geoinfo.coordinates[0])
+            #    _rect_parallel_translation(smile_rect,(0,face.geoinfo.length[1]/2))
+            #    smile_geoinfo = GeoInfo(smile_rect)
+            #    cv2.rectangle(enclosed_faces,
+            #                  smile_geoinfo.coordinates[0],
+            #                  smile_geoinfo.coordinates[1],
+            #                  (0,0,255), thickness=3)
 
             #ひとつでも笑顔唇を認識している場合「笑っている」と判定
             if len(smile_rects) > 0:
@@ -124,77 +124,18 @@ class FaceRecognizer(object):
                 face.is_smiling = False
                 frame_color = color_face
 
-            # 写っている人間ごとの盛り上がり度
-
-            # 笑わせた
-            #omorosa.count_smile(face.is_smiling)
-            #if speech != "":
-            #    omorosa.count_loudness(True)
-            #else:
-            #    omorosa.count_loudness(False)
-
-        # 顔認識の枠の色
-        color_face = (255, 0, 0)
-        # 笑顔認識の枠の色
-        color_smile = (0, 255, 0)
-
-        # 新しい顔
-        new_faces = []
-        for face_rect in face_rects:
-            new_faces.append(Face(geoinfo=GeoInfo(face_rect)))
-
-        # print "num of past faces = " + str(len(faces))
-        # print "num of current faces = " + str(len(new_faces))
 
 
-        # 現在トラッキングしている顔を更新
-        self.update_faces(self.faces, new_faces)
 
-        for i, face in enumerate(self.faces):
-            image_ = Image.fromarray(np.uint8(image))
-
-            # 笑顔認識 顔の下半分だけ笑顔(笑顔唇)判定
-            face_image = image_.crop((face.geoinfo.coordinates[0][0],
-                                      face.geoinfo.coordinates[0][1]+face.geoinfo.length[1]/2,
-                                      face.geoinfo.coordinates[1][0],
-                                      face.geoinfo.coordinates[1][1],))
-            smile_rects = self.get_features(face_image, smile_feature_path, min_neighbors=1,min_size=(int(face.geoinfo.length[0]*0.2), int(face.geoinfo.length[1]*0.2)))
-
-            #[For debug]認識している笑顔の唇の枠表示
-            for smile_rect in smile_rects:
-                _rect_parallel_translation(smile_rect,face.geoinfo.coordinates[0])
-                _rect_parallel_translation(smile_rect,(0,face.geoinfo.length[1]/2))
-                smile_geoinfo = GeoInfo(smile_rect)
-                cv2.rectangle(enclosed_faces,
-                              smile_geoinfo.coordinates[0],
-                              smile_geoinfo.coordinates[1],
-                              (0,0,255), thickness=3)
-
-            #ひとつでも笑顔唇を認識している場合「笑っている」と判定
-            if len(smile_rects) > 0:
-                face.is_smiling = True
-                frame_color = color_smile
-            else:
-                face.is_smiling = False
-                frame_color = color_face
-
-            # 写っている人間ごとの盛り上がり度
-
-            # 笑わせた
-            #omorosa.count_smile(face.is_smiling)
-            #if speech != "":
-            #    omorosa.count_loudness(True)
-            #else:
-            #    omorosa.count_loudness(False)
 
             cv2.rectangle(enclosed_faces,
                           face.geoinfo.coordinates[0],
                           face.geoinfo.coordinates[1],
                           frame_color, thickness=3)
-            enclosed_faces = self.write_speech(enclosed_faces,
-                                               face.geoinfo.coordinates[0],
-                                               face.geoinfo.coordinates[1],
-                                               speech, str(i))
+            # enclosed_faces = self.write_speech(enclosed_faces,
+            #                                    face.geoinfo.coordinates[0],
+            #                                    face.geoinfo.coordinates[1],
+            #                                    speech, str(i))
 
             enclosed_faces = face.update(enclosed_faces,color_num=i)
 
@@ -270,13 +211,12 @@ class FaceRecognizer(object):
                                   40, encoding='unic')
 
         # ポジネガ判定(todo)
-        #words = word_analyze.morphological_analysis(speech)
 
+        #words = word_analyze.morphological_analysis(speech)
         draw = ImageDraw.Draw(img_edit)
         draw.text((coordinates[0], length[1]), label, font = font, fill='#FFFFFF')
         draw.text((coordinates[0], length[1]), speech, font = font, fill='#FFFFFF')
         image = np.asarray(img_edit)
-
         return image
 
     def get_mean_of_smiles(self):
@@ -319,13 +259,16 @@ if __name__ == '__main__':
         # 表示
         cv2.imshow('FACE', frame_face)
 
+        if omorosa.omoroi_sequence[-1] > omorosa.omoroi_max*0.9:
+            _,image = face_recognizer.cap.read()
+            cv2.imwrite("image.png",image )
+            break
+
         # qを押したら終了
         k = cv2.waitKey(1)
         if k == ord('q'):
             break
 
-    print omorosa.smile_sequence
-    print omorosa.loudness_sequence
 
     capture.release()
     cv2.destroyAllWindows()
