@@ -38,7 +38,7 @@ class FaceRecognizer(object):
         # カメラからキャプチャー
         self.cap = capture
 
-    def get_features(self, image, feature_path,min_neighbors=1,min_size=(100, 100)):
+    def get_features(self, image, feature_path,min_neighbors=1,min_size=(200, 200)):
         """
         与えた特徴量, 教師によって学習したcascade adaboostで領域分割.
         input
@@ -63,7 +63,7 @@ class FaceRecognizer(object):
 
         return faces
 
-    def update(self, speech, min_size=(300, 300)):
+    def update(self, speech, min_size=(200, 200)):
         """
         顔を四角で囲うメソッド.
         input
@@ -86,7 +86,7 @@ class FaceRecognizer(object):
         # 顔認識の枠の色
         color_face = (255, 0, 0)
         # 笑顔認識の枠の色
-        color_smile = (0, 255, 0)
+        color_smile = (0, 0, 255)
 
         # 新しい顔
         new_faces = []
@@ -104,7 +104,7 @@ class FaceRecognizer(object):
                                       face.geoinfo.coordinates[0][1]+face.geoinfo.length[1]/2,
                                       face.geoinfo.coordinates[1][0],
                                       face.geoinfo.coordinates[1][1],))
-            smile_rects = self.get_features(face_image, smile_feature_path, min_neighbors=1,min_size=(int(face.geoinfo.length[0]*0.2), int(face.geoinfo.length[1]*0.2)))
+            smile_rects = self.get_features(face_image, smile_feature_path, min_neighbors=1, min_size=(int(face.geoinfo.length[0]*0.25), int(face.geoinfo.length[1]*0.25)))
 
             #[For debug]認識している笑顔の唇の枠表示
             #for smile_rect in smile_rects:
@@ -239,6 +239,15 @@ if __name__ == '__main__':
 
     graph_drawer = GraphDrawer(ylabel="Omorosa")
 
+    w=int(capture.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH ))
+    h=int(capture.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT ))
+    fourcc = cv2.cv.CV_FOURCC('m', 'p', '4', 'v')
+
+    if os.path.exists('movie.avi'):
+        os.remove('movie.avi')
+
+    out = cv2.VideoWriter('movie.avi',fourcc,7.5,(w,h))
+
     while(True):
 
         # 動画ストリームからフレームを取得
@@ -254,15 +263,17 @@ if __name__ == '__main__':
         omoroi_subsequence = omorosa.get_subsequence(omorosa.omoroi_sequence,length)
 
         graph_drawer.update_plot1d(np.arange(len(omoroi_subsequence)),omoroi_subsequence,ylim=[omorosa.omoroi_min-1.0,omorosa.omoroi_max+1.0],color_num=-1)
-        frame_face = graph_drawer.paste_graph_image(image_data=frame_face,pos=(0,0))
+        frame_face = graph_drawer.paste_graph_image(image_data=frame_face,pos=(w-300,h-300))
+
+        out.write(np.asarray(frame_face,np.uint8))
 
         # 表示
         cv2.imshow('FACE', frame_face)
 
-        if omorosa.omoroi_sequence[-1] > omorosa.omoroi_max*0.9:
-            _,image = face_recognizer.cap.read()
-            cv2.imwrite("image.png",image )
-            break
+        #if omorosa.omoroi_sequence[-1] > omorosa.omoroi_max*0.9:
+        #    _,image = face_recognizer.cap.read()
+        #    cv2.imwrite("image.png",image )
+        #    break
 
         # qを押したら終了
         k = cv2.waitKey(1)
@@ -271,6 +282,7 @@ if __name__ == '__main__':
 
 
     capture.release()
+    out.release()
     cv2.destroyAllWindows()
 
     speech_recognizer.stop()
