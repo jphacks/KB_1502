@@ -54,10 +54,11 @@ class FaceFeatures(object):
 
         特徴量の計算をここで行う。
         """
+        gray_image = cv2.cvtColor(face_image, cv2.COLOR_BGR2GRAY)
         # キーポイントを設定
-        keypoints = feature_settings.detector.detect(face_image)
+        keypoints = feature_settings.detector.detect(gray_image)
         # キーポイントの特徴量を計算
-        keypoint_data, discription_data = feature_settings.descriptor.compute(face_image, keypoints)
+        keypoint_data, discription_data = feature_settings.descriptor.compute(gray_image, keypoints)
 
         return keypoint_data, discription_data
 
@@ -80,6 +81,7 @@ class FaceFeatures(object):
         # キーポイントの特徴量を計算
         keypoint_data, discription_data = self._compute_features(face_image, feature_settings)
 
+        # print 'matching data type: %s %s' % (type(discription_data), discription_data.dtype)
         matching_results = [feature_settings.matcher.match(discription, discription_data)
                             for (_, _, discription) in self.features]
 
@@ -90,7 +92,7 @@ class FaceFeatures(object):
             distances = [m.distance for m in result]
             min_mean = min((sum(distances) / len(distances)), min_mean)
         print 'the distance is %f' % min_mean
-        return min_mean < 150
+        return min_mean < 100
 
 
 class FaceHistories(object):
@@ -112,19 +114,24 @@ class FaceHistories(object):
         if len(self.histories) == 0:
             return face
 
-        stored_face = self._search_face_history(face_image)
-        if stored_face is None:
+        index = self._search_face_history(face_image)
+        print '----- get history: the size of histories: %d' % len(self.histories)
+        if index < 0:
             return face
+        else:
+            stored_face = self.histories[index][1]
+            # 顔の座標が移動しているので、書き換える
+            stored_face.geoinfo = face.geoinfo
 
-        # 顔の座標が移動しているので、書き換える
-        stored_face.geoinfo = face.geoinfo
+            # 履歴から削除
+            del self.histories[index]
 
-        return stored_face
+            return stored_face
 
     def _search_face_history(self, face_image):
         """
         顔画像に該当するデータが有るかを調べる。
-        あれば、そのFaceのインスタンス、なければ、Noneを返す。
+        あれば、そのインデックス、なければ、-1を返す。
         """
         search_result = [face_features.compare_face_image(face_image, self.feature_settings)
                          for (face_features, _) in self.histories]
@@ -132,24 +139,19 @@ class FaceHistories(object):
             # 複数で該当した場合でも、配列の先頭の履歴を返す
             i = search_result.index(True)
             print '----- found the face: index=%d -----' % i
-            return self.histories[i][1] # Faceのインスタンスの方
+            return i
         else:
             print '----- not found the face -----'
-            return None
+            return -1
 
     def set_history(self, face_image, face):
         """
-        履歴を保存する。ただし、すでに登録されている場合は、何もしない。
-        get_historyで履歴を取得した時に、履歴を消したほうが簡単かもしれない
+        履歴を保存する
         """
         print '----- set history -----'
-        if len(self.histories) != 0:
-            search_result = self._search_face_history(face_image)
-        else:
-            search_result = None
+        self._register_new_face(face_image, face)
 
-        if search_result is None:
-            self._register_new_face(face_image, face)
+        print '----- set history: the size of histories: %d' % len(self.histories)
 
     def _register_new_face(self, face_image, face):
         """
