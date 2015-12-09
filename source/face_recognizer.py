@@ -176,6 +176,7 @@ class FaceRecognizer(object):
                 face_indexes.reverse()
                 # トラッキングしていたが顔がなくなったので、消す前に履歴に残す
                 for i in face_indexes:
+                    print '顔が消えた'
                     if self.previous_image is not None:
                         face = faces[i]
                         # 顔画像を取得
@@ -202,6 +203,7 @@ class FaceRecognizer(object):
 
         # 新しい顔が見つかったので、過去の履歴にないか調べる
         for j in new_face_indexes:
+            print '顔が出てきた'
             new_face = new_faces[j]
             # 顔画像を取得
             face_image = image.crop((new_face.geoinfo.coordinates[0][0],
@@ -210,6 +212,7 @@ class FaceRecognizer(object):
                                      new_face.geoinfo.coordinates[1][1],))
             face_image_ = np.asarray(face_image)
             faces.append(self.histories.get_history(face_image_, new_face))
+            # faces.append(new_faces[j])
 
     def write_speech(self, image, coordinates, length, speech, label):
         """
