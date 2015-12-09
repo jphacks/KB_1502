@@ -145,9 +145,8 @@ class FaceRecognizer(object):
         """
         顔を更新
         input
-            faces:現在tracking中の顔
-        output
-            new_faces:新たにdetectした顔
+            faces:現在tracking中の顔リスト
+            new_faces:新たにdetectした顔リスト
         """
         #今現在トラッキングしている顔座標と新たに取得した顔座標同士の距離を計算
         distances_matrix = []
