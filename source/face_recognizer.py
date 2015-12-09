@@ -18,6 +18,8 @@ from word_analyze import WordAnalyze
 
 from omoroi_data import OmoroiData
 
+from face_history import FaceHistories
+
 from fig2img import fig2data,fig2img
 
 import matplotlib.pyplot as plt
@@ -37,6 +39,11 @@ class FaceRecognizer(object):
         self.smile_matrix = [[]] * 50
         # カメラからキャプチャー
         self.cap = capture
+
+        # 顔データの履歴
+        self.histories = FaceHistories()
+        # 前の時刻での画像
+        self.previous_image = None
 
     def get_features(self, image, feature_path,min_neighbors=1,min_size=(200, 200)):
         """
@@ -93,12 +100,13 @@ class FaceRecognizer(object):
         for face_rect in face_rects:
             new_faces.append(Face(geoinfo=GeoInfo(face_rect)))
 
+        image_ = Image.fromarray(np.uint8(image))
+
         # 現在トラッキングしている顔を更新
-        self.update_faces(self.faces, new_faces)
+        self.update_faces(self.faces, new_faces, image_)
+        self.previous_image = image_
 
         for i, face in enumerate(self.faces):
-            image_ = Image.fromarray(np.uint8(image))
-
             # 笑顔認識 顔の下半分だけ笑顔(笑顔唇)判定
             face_image = image_.crop((face.geoinfo.coordinates[0][0],
                                       face.geoinfo.coordinates[0][1]+face.geoinfo.length[1]/2,
@@ -141,7 +149,7 @@ class FaceRecognizer(object):
 
         return enclosed_faces
 
-    def update_faces(self, faces, new_faces):
+    def update_faces(self, faces, new_faces, image):
         """
         顔を更新
         input
@@ -166,7 +174,18 @@ class FaceRecognizer(object):
         while(len(face_indexes)>0):
             if (len(new_face_indexes) == 0):
                 face_indexes.reverse()
+                # トラッキングしていたが顔がなくなったので、消す前に履歴に残す
                 for i in face_indexes:
+                    if self.previous_image is not None:
+                        face = faces[i]
+                        # 顔画像を取得
+                        face_image = self.previous_image.crop((face.geoinfo.coordinates[0][0],
+                                                               face.geoinfo.coordinates[0][1],
+                                                               face.geoinfo.coordinates[1][0],
+                                                               face.geoinfo.coordinates[1][1],))
+                        face_image_ = np.asarray(face_image)
+                        self.histories.set_history(face_image_, face)
+
                     del faces[i]
                 break
             min_distance = np.inf
@@ -181,8 +200,16 @@ class FaceRecognizer(object):
             del face_indexes[min_i]
             del new_face_indexes[min_j]
 
+        # 新しい顔が見つかったので、過去の履歴にないか調べる
         for j in new_face_indexes:
-            faces.append(new_faces[j])
+            new_face = new_faces[j]
+            # 顔画像を取得
+            face_image = image.crop((new_face.geoinfo.coordinates[0][0],
+                                     new_face.geoinfo.coordinates[0][1],
+                                     new_face.geoinfo.coordinates[1][0],
+                                     new_face.geoinfo.coordinates[1][1],))
+            face_image_ = np.asarray(face_image)
+            faces.append(self.histories.get_history(face_image_, new_face))
 
     def write_speech(self, image, coordinates, length, speech, label):
         """
