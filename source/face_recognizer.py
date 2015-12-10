@@ -12,7 +12,7 @@ from speech_recognizer import SpeechRecognizer
 
 from Face import GeoInfo,Face
 
-from graph_drawer import GraphDrawer
+from graph_drawer import GraphDrawer,Graph
 
 from word_analyze import WordAnalyze
 
@@ -142,7 +142,7 @@ class FaceRecognizer(object):
             #                                    face.geoinfo.coordinates[1],
             #                                    speech, str(i))
 
-            enclosed_faces = face.update(enclosed_faces,color_num=i)
+            face.update()
 
         return enclosed_faces
 
@@ -255,7 +255,7 @@ class FaceRecognizer(object):
 
 if __name__ == '__main__':
 
-    omorosa = OmoroiData()
+
 
     word_analyze = WordAnalyze()
 
@@ -265,11 +265,14 @@ if __name__ == '__main__':
     speech_recognizer = SpeechRecognizer()
     speech_recognizer.start()
 
-    graph_drawer = GraphDrawer(ylabel="Omorosa")
 
     w=int(capture.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH ))
     h=int(capture.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT ))
     fourcc = cv2.cv.CV_FOURCC('m', 'p', '4', 'v')
+
+    graph_drawer = GraphDrawer()
+    all_omorosa = OmoroiData()
+    all_graph = Graph(color=(1.0,0.0,1.0),ylim=[all_omorosa.omoroi_min-1.0,all_omorosa.omoroi_max+1.0],ylabel="Omorosa")
 
     if os.path.exists('movie.avi'):
         os.remove('movie.avi')
@@ -279,19 +282,26 @@ if __name__ == '__main__':
     while(True):
 
         # 動画ストリームからフレームを取得
-
         speech = speech_recognizer.get_speech()
 
         # frameで切り取り画像を受け取る
         frame_face = face_recognizer.update(speech)
-        omorosa.update_omoroi_sequence(face_recognizer.get_mean_of_smiles(),int( not (speech == "")))
-        # 画像・音声の部分時系列を取得
+
+        all_omorosa.update_omoroi_sequence(face_recognizer.get_mean_of_smiles(),int( not (speech == "")))
+        # 盛り上がり度の部分時系列を取得
         length = 20
+        all_omoroi_subsequence = all_omorosa.get_subsequence(all_omorosa.omoroi_sequence,length)
+        all_graph.set_graph_data(x = numpy.arange(len(all_omoroi_subsequence)),
+                                 y = all_omoroi_subsequence,
+                                 pos = (w-300,h-300))
 
-        omoroi_subsequence = omorosa.get_subsequence(omorosa.omoroi_sequence,length)
+        #graph_drawer内のgraphを更新
+        graph_drawer.init_graphs()
+        for face in face_recognizer.faces:
+            graph_drawer.append_graphs(face.graph)
+        graph_drawer.append_graphs(all_graph)
 
-        graph_drawer.update_plot1d(np.arange(len(omoroi_subsequence)),omoroi_subsequence,ylim=[omorosa.omoroi_min-1.0,omorosa.omoroi_max+1.0],color_num=-1)
-        frame_face = graph_drawer.paste_graph_image(image_data=frame_face,pos=(w-300,h-300))
+        frame_face = graph_drawer.draw_graphs(frame_face)
 
         out.write(np.asarray(frame_face,np.uint8))
 
@@ -314,3 +324,4 @@ if __name__ == '__main__':
     cv2.destroyAllWindows()
 
     speech_recognizer.stop()
+    graph_drawer.stop()
