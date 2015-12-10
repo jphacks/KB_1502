@@ -1,3 +1,5 @@
+# -*- coding: UTF-8 -*-
+
 from omoroi_data import OmoroiData
 from graph_drawer import GraphDrawer
 import numpy as np
@@ -17,6 +19,34 @@ class GeoInfo(object):
         self.length = self._length()
         self.center = self._center()
 
+
+class FaceImageArray(object):
+    """
+    顔が一旦消えて、また現れた時に、以前の履歴を引き継ぐために顔画像を保存する。
+    再び現れた時に照合して、同一人物であるかを判定する。
+    """
+
+    # 保存する顔画像の最大枚数。多分そこまで、測度に影響はないと思う。多いほうが精度は高いと思う。
+    max_image_number = 20
+    # この枚数より保存数が小さい時は、カメラの前にいる時間が短すぎるので、履歴の対象から除外する
+    min_image_number = 3
+
+    def __init__(self):
+        self.images = []
+
+    def add_face_image(self, face_image):
+        """
+        顔画像を保存する。保存している画像の枚数が最大枚数に達している場合は、何もしない
+        """
+        if len(self.images) < self.max_image_number:
+            self.images.append(face_image)
+
+    def clear_face_images(self):
+        self.images = []
+
+    def is_enough_images(self):
+        return len(self.images) >= self.min_image_number
+
 class Face(object):
 
     def __init__(self,geoinfo,speech=""):
@@ -27,6 +57,7 @@ class Face(object):
         self.graph_drawer = GraphDrawer(ylabel="Omorosa",scale=80,figsize=(2,2))
         self.omoroi_data = OmoroiData()
 
+        self.face_images = FaceImageArray()
 
     def update(self,image_data,color_num):
         self.omoroi_data.update_omoroi_sequence(self.is_smiling,0)
