@@ -33,13 +33,17 @@ for doc_index in xrange(1, 100):
                 if sentence_index < 101:
                     labeled_text = open("../training_dataset/sentiment/labeled_text.txt", "a")
                     print sentence
-                    print "ラベルを入力してください:"
-                    label = raw_input()
+
                     print "保存しますか？(保存する:1, 保存しない:0):"
                     save_flag = raw_input()
+
                     if save_flag == "1":
+                        print "ラベルを入力してください:"
+                        label = raw_input()
+
                         labeled_text.writelines("%s:" % label + sentence)
                         print "保存しました."
+
                     labeled_text.close()
                 else:
                     break
