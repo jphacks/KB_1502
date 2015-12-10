@@ -1,5 +1,5 @@
 from omoroi_data import OmoroiData
-from graph_drawer import GraphDrawer
+from graph_drawer import Graph
 import numpy as np
 
 class GeoInfo(object):
@@ -24,19 +24,20 @@ class Face(object):
         self.is_smiling = False
         self.speech = speech
         self.smile_sequence = []
-        self.graph_drawer = GraphDrawer(ylabel="Omorosa",scale=80,figsize=(2,2))
         self.omoroi_data = OmoroiData()
+        self.graph = Graph(
+            ylim=[self.omoroi_data.omoroi_min-1.0,self.omoroi_data.omoroi_max+1.0],
+            ylabel="Omorosa",scale=80,figsize=(2,2)
+        )
 
 
-    def update(self,image_data,color_num):
+
+    def update(self):
         self.omoroi_data.update_omoroi_sequence(self.is_smiling,0)
         length = 20
         omoroi_subsequence = self.omoroi_data.get_subsequence(self.omoroi_data.omoroi_sequence,length)
-        self.graph_drawer.update_plot1d(
-            np.arange(len(omoroi_subsequence)),
-            omoroi_subsequence,
-            ylim=[self.omoroi_data.omoroi_min-1.0,self.omoroi_data.omoroi_max+1.0],
-            color_num=color_num)
         pos = (self.geoinfo.coordinates[0][0]+self.geoinfo.length[0],
                self.geoinfo.coordinates[0][1]-self.geoinfo.length[1]/2)
-        return self.graph_drawer.paste_graph_image(image_data=image_data,pos=pos)
+        self.graph.set_graph_data(np.arange(len(omoroi_subsequence)),
+                                  omoroi_subsequence,
+                                  pos = pos)
