@@ -245,10 +245,10 @@ if __name__ == '__main__':
     all_omorosa = OmoroiData()
     all_graph = Graph(color=(1.0,0.0,1.0),ylim=[all_omorosa.omoroi_min-1.0,all_omorosa.omoroi_max+1.0],ylabel="Omorosa")
 
-    if os.path.exists('movie.avi'):
-        os.remove('movie.avi')
 
-    out = cv2.VideoWriter('movie.avi',fourcc,7.5,(w,h))
+    #if os.path.exists('movie.avi'):
+    #    os.remove('movie.avi')
+    #out = cv2.VideoWriter('movie.avi',fourcc,7.5,(w,h))
 
     while(True):
 
@@ -273,7 +273,7 @@ if __name__ == '__main__':
         graph_drawer.append_graphs(all_graph)
         frame_face = graph_drawer.draw_graphs(frame_face)
 
-        out.write(np.asarray(frame_face,np.uint8))
+    #    out.write(np.asarray(frame_face,np.uint8))
 
         # 表示
         cv2.imshow('FACE', frame_face)
@@ -290,7 +290,7 @@ if __name__ == '__main__':
 
 
     capture.release()
-    out.release()
+    #out.release()
     cv2.destroyAllWindows()
 
     speech_recognizer.stop()
