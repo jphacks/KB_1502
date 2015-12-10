@@ -42,10 +42,17 @@ class FaceFeatures(object):
     カメラで新たに得られた顔画像と比較することで、同一人物であるかを判定する
     """
     def __init__(self, face_image, feature_settings):
+        """
+        face_imageが複数枚(list形式）の場合でもOK
+        """
         self.features = []
 
         # 顔画像を登録
-        self.register_face_image(face_image, feature_settings)
+        if isinstance(face_image, list):
+            for image in face_image:
+                self.register_face_image(image, feature_settings)
+        else:
+            self.register_face_image(face_image, feature_settings)
 
     def _compute_features(self, face_image, feature_settings):
         """
@@ -123,6 +130,8 @@ class FaceHistories(object):
             # 顔の座標が移動しているので、書き換える
             stored_face.geoinfo = face.geoinfo
 
+            # faceに保存している画像を削除して、改めてトラッキング中に画像を保存できるようにする
+            stored_face.face_images.clear_face_images()
             # 履歴から削除
             del self.histories[index]
 
@@ -144,18 +153,20 @@ class FaceHistories(object):
             print '----- not found the face -----'
             return -1
 
-    def set_history(self, face_image, face):
+    def set_history(self, face_images, face):
         """
         履歴を保存する
+        face_imagesが複数枚の場合は、list形式
         """
         print '----- set history -----'
-        self._register_new_face(face_image, face)
+        self._register_new_face(face_images, face)
 
         print '----- set history: the size of histories: %d' % len(self.histories)
 
-    def _register_new_face(self, face_image, face):
+    def _register_new_face(self, face_images, face):
         """
         FaceFeaturesとFaceのインスタンスを保存
+        face_imagesが複数枚の場合は、list形式
         """
         print '----- register new face -----'
-        self.histories.append((FaceFeatures(face_image, self.feature_settings), face))
+        self.histories.append((FaceFeatures(face_images, self.feature_settings), face))

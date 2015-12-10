@@ -42,8 +42,6 @@ class FaceRecognizer(object):
 
         # 顔データの履歴
         self.histories = FaceHistories()
-        # 前の時刻での画像
-        self.previous_image = None
 
     def get_features(self, image, feature_path,min_neighbors=1,min_size=(200, 200)):
         """
@@ -104,7 +102,6 @@ class FaceRecognizer(object):
 
         # 現在トラッキングしている顔を更新
         self.update_faces(self.faces, new_faces, image_)
-        self.previous_image = image_
 
         for i, face in enumerate(self.faces):
             # 笑顔認識 顔の下半分だけ笑顔(笑顔唇)判定
@@ -177,15 +174,9 @@ class FaceRecognizer(object):
                 # トラッキングしていたが顔がなくなったので、消す前に履歴に残す
                 for i in face_indexes:
                     print '顔が消えた'
-                    if self.previous_image is not None:
-                        face = faces[i]
-                        # 顔画像を取得
-                        face_image = self.previous_image.crop((face.geoinfo.coordinates[0][0],
-                                                               face.geoinfo.coordinates[0][1],
-                                                               face.geoinfo.coordinates[1][0],
-                                                               face.geoinfo.coordinates[1][1],))
-                        face_image_ = np.asarray(face_image)
-                        self.histories.set_history(face_image_, face)
+                    if faces[i].face_images.is_enough_images():
+                        # 十分に枚数を取得できている場合にのみ履歴を保存
+                        self.histories.set_history(faces[i].face_images.images, faces[i])
 
                     del faces[i]
                 break
@@ -197,6 +188,13 @@ class FaceRecognizer(object):
                         min_i = i
                         min_j = j
             faces[face_indexes[min_i]].geoinfo = new_faces[new_face_indexes[min_j]].geoinfo
+            # geoinfoに対応する領域の画像を取得、faceに保存
+            geoinfo = new_faces[new_face_indexes[min_j]].geoinfo
+            face_image = np.asarray(image.crop((geoinfo.coordinates[0][0],
+                                                geoinfo.coordinates[0][1],
+                                                geoinfo.coordinates[1][0],
+                                                geoinfo.coordinates[1][1],)))
+            faces[face_indexes[min_i]].face_images.add_face_image(face_image)
 
             del face_indexes[min_i]
             del new_face_indexes[min_j]
@@ -211,6 +209,7 @@ class FaceRecognizer(object):
                                      new_face.geoinfo.coordinates[1][0],
                                      new_face.geoinfo.coordinates[1][1],))
             face_image_ = np.asarray(face_image)
+            # 履歴に照らし合わせてfaceを追加
             faces.append(self.histories.get_history(face_image_, new_face))
             # faces.append(new_faces[j])
 
