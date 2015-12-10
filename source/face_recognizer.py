@@ -27,7 +27,7 @@ import numpy
 
 face_feature_path = "../training_dataset/haarcascade_frontalface_alt.xml"
 smile_feature_path = "../training_dataset/smiled_04.xml"
-
+mouth_feature_path = "../training_dataset/haarcascade_mcs_mouth.xml"
 
 def _rect_parallel_translation(lrect,translation):
     lrect[0:2] = [lrect[0]+translation[0],lrect[1]+translation[1]]
@@ -129,7 +129,7 @@ class FaceRecognizer(object):
                 face.is_smiling = False
                 frame_color = color_face
 
-
+            # 顔の下半分の領域から口を含む矩形を検出する
 
 
 
