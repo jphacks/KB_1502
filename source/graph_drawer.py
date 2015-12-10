@@ -68,11 +68,9 @@ class GraphDrawer(object):
         self.graphs.append(graph)
 
     def draw_graphs(self,org_img_array):
-        print "draw_graphs"
         org_img = Image.fromarray(org_img_array)
         for graph in self.graphs:
             if graph.image is not None:
-                print "graph"
                 box = (graph.pos[0],graph.pos[1],graph.pos[0]+graph.boxsize[0],graph.pos[1]+graph.boxsize[1])
                 org_img.paste(graph.image,box)
         return np.asarray(org_img)
