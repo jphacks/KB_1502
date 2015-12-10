@@ -18,8 +18,6 @@ from word_analyze import WordAnalyze
 
 from omoroi_data import OmoroiData
 
-from face_history import FaceHistories
-
 from fig2img import fig2data,fig2img
 
 import matplotlib.pyplot as plt
@@ -27,7 +25,7 @@ import numpy
 
 face_feature_path = "../training_dataset/haarcascade_frontalface_alt.xml"
 smile_feature_path = "../training_dataset/smiled_04.xml"
-mouth_feature_path = "../training_dataset/haarcascade_mcs_mouth.xml"
+
 
 def _rect_parallel_translation(lrect,translation):
     lrect[0:2] = [lrect[0]+translation[0],lrect[1]+translation[1]]
@@ -39,9 +37,6 @@ class FaceRecognizer(object):
         self.smile_matrix = [[]] * 50
         # カメラからキャプチャー
         self.cap = capture
-
-        # 顔データの履歴
-        self.histories = FaceHistories()
 
     def get_features(self, image, feature_path,min_neighbors=1,min_size=(200, 200)):
         """
@@ -98,12 +93,12 @@ class FaceRecognizer(object):
         for face_rect in face_rects:
             new_faces.append(Face(geoinfo=GeoInfo(face_rect)))
 
-        image_ = Image.fromarray(np.uint8(image))
-
         # 現在トラッキングしている顔を更新
-        self.update_faces(self.faces, new_faces, image_)
+        self.update_faces(self.faces, new_faces)
 
         for i, face in enumerate(self.faces):
+            image_ = Image.fromarray(np.uint8(image))
+
             # 笑顔認識 顔の下半分だけ笑顔(笑顔唇)判定
             face_image = image_.crop((face.geoinfo.coordinates[0][0],
                                       face.geoinfo.coordinates[0][1]+face.geoinfo.length[1]/2,
@@ -129,7 +124,7 @@ class FaceRecognizer(object):
                 face.is_smiling = False
                 frame_color = color_face
 
-            # 顔の下半分の領域から口を含む矩形を検出する
+
 
 
 
@@ -146,7 +141,7 @@ class FaceRecognizer(object):
 
         return enclosed_faces
 
-    def update_faces(self, faces, new_faces, image):
+    def update_faces(self, faces, new_faces):
         """
         顔を更新
         input
@@ -170,13 +165,7 @@ class FaceRecognizer(object):
         while(len(face_indexes)>0):
             if (len(new_face_indexes) == 0):
                 face_indexes.reverse()
-                # トラッキングしていたが顔がなくなったので、消す前に履歴に残す
                 for i in face_indexes:
-                    print '顔が消えた'
-                    if faces[i].face_images.is_enough_images():
-                        # 十分に枚数を取得できている場合にのみ履歴を保存
-                        self.histories.set_history(faces[i].face_images.images, faces[i])
-
                     del faces[i]
                 break
             min_distance = np.inf
@@ -187,30 +176,12 @@ class FaceRecognizer(object):
                         min_i = i
                         min_j = j
             faces[face_indexes[min_i]].geoinfo = new_faces[new_face_indexes[min_j]].geoinfo
-            # geoinfoに対応する領域の画像を取得、faceに保存
-            geoinfo = new_faces[new_face_indexes[min_j]].geoinfo
-            face_image = np.asarray(image.crop((geoinfo.coordinates[0][0],
-                                                geoinfo.coordinates[0][1],
-                                                geoinfo.coordinates[1][0],
-                                                geoinfo.coordinates[1][1],)))
-            faces[face_indexes[min_i]].face_images.add_face_image(face_image)
 
             del face_indexes[min_i]
             del new_face_indexes[min_j]
 
-        # 新しい顔が見つかったので、過去の履歴にないか調べる
         for j in new_face_indexes:
-            print '顔が出てきた'
-            new_face = new_faces[j]
-            # 顔画像を取得
-            face_image = image.crop((new_face.geoinfo.coordinates[0][0],
-                                     new_face.geoinfo.coordinates[0][1],
-                                     new_face.geoinfo.coordinates[1][0],
-                                     new_face.geoinfo.coordinates[1][1],))
-            face_image_ = np.asarray(face_image)
-            # 履歴に照らし合わせてfaceを追加
-            faces.append(self.histories.get_history(face_image_, new_face))
-            # faces.append(new_faces[j])
+            faces.append(new_faces[j])
 
     def write_speech(self, image, coordinates, length, speech, label):
         """
@@ -300,7 +271,6 @@ if __name__ == '__main__':
         for face in face_recognizer.faces:
             graph_drawer.append_graphs(face.graph)
         graph_drawer.append_graphs(all_graph)
-
         frame_face = graph_drawer.draw_graphs(frame_face)
 
         out.write(np.asarray(frame_face,np.uint8))
