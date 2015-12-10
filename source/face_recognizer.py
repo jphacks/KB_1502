@@ -27,7 +27,6 @@ import numpy
 
 face_feature_path = "../training_dataset/haarcascade_frontalface_alt.xml"
 smile_feature_path = "../training_dataset/smiled_04.xml"
-mouth_feature_path = "../training_dataset/haarcascade_mcs_mouth.xml"
 
 def _rect_parallel_translation(lrect,translation):
     lrect[0:2] = [lrect[0]+translation[0],lrect[1]+translation[1]]
@@ -103,13 +102,25 @@ class FaceRecognizer(object):
         # 現在トラッキングしている顔を更新
         self.update_faces(self.faces, new_faces, image_)
 
+        # 音声信号のない場合は、発話者の判定処理をスキップする
+        if True:
+            speaker_index = -1
+            value = 0
+            for i, face in enumerate(self.faces):
+                tmp = face.mouth_images.compute_variability()
+                if tmp > value:
+                    speaker_index = i
+                    value = tmp
+        else:
+            speaker_index = -1
+
         for i, face in enumerate(self.faces):
             # 笑顔認識 顔の下半分だけ笑顔(笑顔唇)判定
-            face_image = image_.crop((face.geoinfo.coordinates[0][0],
-                                      face.geoinfo.coordinates[0][1]+face.geoinfo.length[1]/2,
-                                      face.geoinfo.coordinates[1][0],
-                                      face.geoinfo.coordinates[1][1],))
-            smile_rects = self.get_features(face_image, smile_feature_path, min_neighbors=1, min_size=(int(face.geoinfo.length[0]*0.25), int(face.geoinfo.length[1]*0.25)))
+            x1, y1 = face.geoinfo.coordinates[0][0], face.geoinfo.coordinates[0][1]+face.geoinfo.length[1]/2
+            x2, y2 = face.geoinfo.coordinates[1]
+            face_image = image_.crop((x1, y1, x2, y2))
+            smile_rects = self.get_features(face_image, smile_feature_path, min_neighbors=1,
+                                            min_size=(int(face.geoinfo.length[0]*0.25), int(face.geoinfo.length[1]*0.25)))
 
             #[For debug]認識している笑顔の唇の枠表示
             #for smile_rect in smile_rects:
@@ -129,9 +140,12 @@ class FaceRecognizer(object):
                 face.is_smiling = False
                 frame_color = color_face
 
-            # 顔の下半分の領域から口を含む矩形を検出する
-
-
+            if i == speaker_index:
+                # 顔の下半分の領域から口を含む矩形を決め打ちで表示
+                w = x2 - x1
+                h = y2 - y1
+                cv2.rectangle(enclosed_faces, (x1 + int(w * 0.25), y1 + int(h * 0.3)),
+                              (x2 - int(w * 0.25), y2 - int(h * 0.1)), (255, 0, 255), thickness=3)
 
             cv2.rectangle(enclosed_faces,
                           face.geoinfo.coordinates[0],
@@ -189,11 +203,18 @@ class FaceRecognizer(object):
             faces[face_indexes[min_i]].geoinfo = new_faces[new_face_indexes[min_j]].geoinfo
             # geoinfoに対応する領域の画像を取得、faceに保存
             geoinfo = new_faces[new_face_indexes[min_j]].geoinfo
-            face_image = np.asarray(image.crop((geoinfo.coordinates[0][0],
-                                                geoinfo.coordinates[0][1],
-                                                geoinfo.coordinates[1][0],
-                                                geoinfo.coordinates[1][1],)))
+            # 顔画像の処理
+            x1, y1 = geoinfo.coordinates[0]
+            x2, y2 = geoinfo.coordinates[1]
+            face_image = np.asarray(image.crop((x1, y1, x2, y2)))
             faces[face_indexes[min_i]].face_images.add_face_image(face_image)
+            # 口元の画像の処理　領域の大きさは決め打ち
+            w = x2 - x1
+            h = (y2 - y1) / 2
+            y3 = y1 + h
+            mouth_image = np.asarray(image.crop((x1 + int(w * 0.25), y3 + int(h * 0.3),
+                                                 x2 - int(w * 0.25), y2 - int(h * 0.1))))
+            faces[face_indexes[min_i]].mouth_images.add_mouth_image(mouth_image)
 
             del face_indexes[min_i]
             del new_face_indexes[min_j]

@@ -1,8 +1,12 @@
 # -*- coding: UTF-8 -*-
 
+from collections import deque
+
 from omoroi_data import OmoroiData
 from graph_drawer import Graph
 import numpy as np
+from PIL import Image
+import cv2
 
 class GeoInfo(object):
 
@@ -27,7 +31,7 @@ class FaceImageArray(object):
     """
 
     # 保存する顔画像の最大枚数。多分そこまで、測度に影響はないと思う。多いほうが精度は高いと思う。
-    max_image_number = 20
+    max_image_number = 7
     # この枚数より保存数が小さい時は、カメラの前にいる時間が短すぎるので、履歴の対象から除外する
     min_image_number = 3
 
@@ -47,6 +51,65 @@ class FaceImageArray(object):
     def is_enough_images(self):
         return len(self.images) >= self.min_image_number
 
+
+class MouthImageArray(object):
+    """
+    口元の領域（決め打ち）の画像を連続して保存する。
+    連続する２つの画像をそれぞれ比較して、変化量の合計が一番大きい人物が話しているとする。
+    """
+    # 保存する画像の最大数。多すぎると話し終えたのに、まだ話していることになる。調整してね。
+    max_image_number = 5
+
+    def __init__(self):
+        self.images = deque(maxlen=self.max_image_number)
+        # images[i]とimages[i+1]の差をdifference_array[i]に入れる
+        self.difference_array = deque(maxlen=self.max_image_number - 1)
+
+    def _fit_image_size(self, base_image, image):
+        """imageをbase_imageの大きさに縮尺を変更する"""
+        new_image = image.resize(base_image.size)
+        return new_image
+
+    def _compute_difference(self, image1, image2):
+        """
+        ２つの画像の差を計算する
+
+        画像の大きさに変化量が依存するのはおかしいと思うので、
+        依存しない平均事情誤差で測る
+        """
+        tmp1 = Image.fromarray(np.uint8(image1))
+        tmp2 = Image.fromarray(np.uint8(image2))
+        new_image2 = np.asarray(self._fit_image_size(tmp1, tmp2))
+
+        return np.mean((image1 - new_image2) ** 2)
+
+    def compute_variability(self):
+        return np.sum(self.difference_array)
+
+    def add_mouth_image(self, image):
+        if len(self.images) == self.max_image_number:
+            # 上限まで保存しているので、一番古い画像を捨てる
+            self.images.popleft()
+            self.difference_array.popleft()
+
+        # どちらかと言うと形の変化が重要なので、たぶん色の細かな変化は余計である
+        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        # 追加する
+        self.images.append(gray_image)
+
+        n = len(self.images)
+        if n == 1:
+            # 一枚しかないので、変化を計算しようがない
+            return
+        # 変化を計算
+        self.difference_array.append(self._compute_difference(self.images[n - 2], self.images[n - 1]))
+
+    def clear_mouth_images(self):
+        self.images.clear()
+        self.difference_array.clear()
+
+
 class Face(object):
 
     def __init__(self,geoinfo,speech=""):
@@ -62,6 +125,7 @@ class Face(object):
 
 
         self.face_images = FaceImageArray()
+        self.mouth_images = MouthImageArray()
 
     def update(self):
         self.omoroi_data.update_omoroi_sequence(self.is_smiling,0)
