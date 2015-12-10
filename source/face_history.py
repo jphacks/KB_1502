@@ -132,6 +132,9 @@ class FaceHistories(object):
 
             # faceに保存している画像を削除して、改めてトラッキング中に画像を保存できるようにする
             stored_face.face_images.clear_face_images()
+            # 口元の画像も削除
+            stored_face.mouth_images.clear_mouth_images()
+
             # 履歴から削除
             del self.histories[index]
 

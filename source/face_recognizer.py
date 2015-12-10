@@ -18,6 +18,8 @@ from word_analyze import WordAnalyze
 
 from omoroi_data import OmoroiData
 
+from face_history import FaceHistories
+
 from fig2img import fig2data,fig2img
 
 import matplotlib.pyplot as plt
@@ -27,7 +29,6 @@ import time
 
 face_feature_path = "../training_dataset/haarcascade_frontalface_alt.xml"
 smile_feature_path = "../training_dataset/smiled_04.xml"
-
 
 def _rect_parallel_translation(lrect,translation):
     lrect[0:2] = [lrect[0]+translation[0],lrect[1]+translation[1]]
@@ -39,6 +40,9 @@ class FaceRecognizer(object):
         self.smile_matrix = [[]] * 50
         # カメラからキャプチャー
         self.cap = capture
+        # 顔データの履歴
+        self.histories = FaceHistories()
+
 
     def get_features(self, image, feature_path,min_neighbors=1,min_size=(200, 200)):
         """
@@ -95,18 +99,32 @@ class FaceRecognizer(object):
         for face_rect in face_rects:
             new_faces.append(Face(geoinfo=GeoInfo(face_rect)))
 
+        image_ = Image.fromarray(np.uint8(image))
+
         # 現在トラッキングしている顔を更新
-        self.update_faces(self.faces, new_faces)
+        self.update_faces(self.faces, new_faces, image_)
+
+        # 音声信号のない場合は、発話者の判定処理をスキップする
+        if True:
+            speaker_index = -1
+            value = 0
+            for i, face in enumerate(self.faces):
+                tmp = face.mouth_images.compute_variability()
+                if tmp > value:
+                    speaker_index = i
+                    value = tmp
+        else:
+            speaker_index = -1
 
         for i, face in enumerate(self.faces):
-            image_ = Image.fromarray(np.uint8(image))
-
             # 笑顔認識 顔の下半分だけ笑顔(笑顔唇)判定
-            face_image = image_.crop((face.geoinfo.coordinates[0][0],
-                                      face.geoinfo.coordinates[0][1]+face.geoinfo.length[1]/2,
-                                      face.geoinfo.coordinates[1][0],
-                                      face.geoinfo.coordinates[1][1],))
-            smile_rects = self.get_features(face_image, smile_feature_path, min_neighbors=1, min_size=(int(face.geoinfo.length[0]*0.25), int(face.geoinfo.length[1]*0.25)))
+
+            x1, y1 = face.geoinfo.coordinates[0][0], face.geoinfo.coordinates[0][1]+face.geoinfo.length[1]/2
+            x2, y2 = face.geoinfo.coordinates[1]
+            face_image = image_.crop((x1, y1, x2, y2))
+            smile_rects = self.get_features(face_image, smile_feature_path, min_neighbors=1,
+                                            min_size=(int(face.geoinfo.length[0]*0.25), int(face.geoinfo.length[1]*0.25)))
+
 
             #[For debug]認識している笑顔の唇の枠表示
             #for smile_rect in smile_rects:
@@ -126,9 +144,12 @@ class FaceRecognizer(object):
                 face.is_smiling = False
                 frame_color = color_face
 
-
-
-
+            if i == speaker_index:
+                # 顔の下半分の領域から口を含む矩形を決め打ちで表示
+                w = x2 - x1
+                h = y2 - y1
+                cv2.rectangle(enclosed_faces, (x1 + int(w * 0.25), y1 + int(h * 0.3)),
+                              (x2 - int(w * 0.25), y2 - int(h * 0.1)), (255, 0, 255), thickness=3)
 
             cv2.rectangle(enclosed_faces,
                           face.geoinfo.coordinates[0],
@@ -143,7 +164,7 @@ class FaceRecognizer(object):
 
         return enclosed_faces
 
-    def update_faces(self, faces, new_faces):
+    def update_faces(self, faces, new_faces, image):
         """
         顔を更新
         input
@@ -167,7 +188,13 @@ class FaceRecognizer(object):
         while(len(face_indexes)>0):
             if (len(new_face_indexes) == 0):
                 face_indexes.reverse()
+                # トラッキングしていたが顔がなくなったので、消す前に履歴に残す
                 for i in face_indexes:
+                    print '顔が消えた'
+                    if faces[i].face_images.is_enough_images():
+                        # 十分に枚数を取得できている場合にのみ履歴を保存
+                        self.histories.set_history(faces[i].face_images.images, faces[i])
+
                     del faces[i]
                 break
             min_distance = np.inf
@@ -178,12 +205,37 @@ class FaceRecognizer(object):
                         min_i = i
                         min_j = j
             faces[face_indexes[min_i]].geoinfo = new_faces[new_face_indexes[min_j]].geoinfo
+            # geoinfoに対応する領域の画像を取得、faceに保存
+            geoinfo = new_faces[new_face_indexes[min_j]].geoinfo
+            # 顔画像の処理
+            x1, y1 = geoinfo.coordinates[0]
+            x2, y2 = geoinfo.coordinates[1]
+            face_image = np.asarray(image.crop((x1, y1, x2, y2)))
+            faces[face_indexes[min_i]].face_images.add_face_image(face_image)
+            # 口元の画像の処理　領域の大きさは決め打ち
+            w = x2 - x1
+            h = (y2 - y1) / 2
+            y3 = y1 + h
+            mouth_image = np.asarray(image.crop((x1 + int(w * 0.25), y3 + int(h * 0.3),
+                                                 x2 - int(w * 0.25), y2 - int(h * 0.1))))
+            faces[face_indexes[min_i]].mouth_images.add_mouth_image(mouth_image)
 
             del face_indexes[min_i]
             del new_face_indexes[min_j]
 
+        # 新しい顔が見つかったので、過去の履歴にないか調べる
         for j in new_face_indexes:
-            faces.append(new_faces[j])
+            print '顔が出てきた'
+            new_face = new_faces[j]
+            # 顔画像を取得
+            face_image = image.crop((new_face.geoinfo.coordinates[0][0],
+                                     new_face.geoinfo.coordinates[0][1],
+                                     new_face.geoinfo.coordinates[1][0],
+                                     new_face.geoinfo.coordinates[1][1],))
+            face_image_ = np.asarray(face_image)
+            # 履歴に照らし合わせてfaceを追加
+            faces.append(self.histories.get_history(face_image_, new_face))
+            # faces.append(new_faces[j])
 
     def write_speech(self, image, coordinates, length, speech, label):
         """
@@ -252,6 +304,7 @@ if __name__ == '__main__':
     #    os.remove('movie.avi')
     #out = cv2.VideoWriter('movie.avi',fourcc,7.5,(w,h))
 
+
     while(True):
 
         # 動画ストリームからフレームを取得
@@ -259,6 +312,7 @@ if __name__ == '__main__':
 
         # frameで切り取り画像を受け取る
         frame_face = face_recognizer.update(speech)
+
 
         all_omorosa.update_omoroi_sequence(face_recognizer.get_mean_of_smiles(),int( not (speech == "")))
         # 盛り上がり度の部分時系列を取得
@@ -286,6 +340,11 @@ if __name__ == '__main__':
         #    break
 
 
+        #if omorosa.omoroi_sequence[-1] > omorosa.omoroi_max*0.9:
+        #    _,image = face_recognizer.cap.read()
+        #    cv2.imwrite("image.png",image )
+        #    break
+
         # qを押したら終了
         k = cv2.waitKey(1)
         if k == ord('q'):
@@ -293,6 +352,7 @@ if __name__ == '__main__':
 
 
     capture.release()
+
     #out.release()
     cv2.destroyAllWindows()
 

@@ -18,7 +18,6 @@ colors = ( (1.0,0.0,0.0),
            (0.0,1.0,1.0),
            (1.0,1.0,0.0) )
 
-
 class Graph(object):
     def __init__(self,ylim=(0,10),color=None,xlabel="",ylabel="",title="",figsize=(4,4),scale=80):
         self.x = None
@@ -33,6 +32,7 @@ class Graph(object):
         self.boxsize = (figsize[0]*scale,figsize[1]*scale)
         self.fontsize = 0.2*scale*figsize[0]/4
         self.image = None
+
 
     def set_image(self,image):
         self.image = image
@@ -77,6 +77,7 @@ class GraphDrawer(object):
                 self.update_graph_images()
                 self.graphs_updated.clear()
 
+
     def _get_graph_image(self,graph):
         fig = plt.figure(figsize=graph.figsize)
         plt.plot(graph.x,graph.y,c=graph.color)
@@ -96,6 +97,10 @@ class GraphDrawer(object):
         for graph in self.graphs:
             if( graph.x is not None):
                 graph.set_image(self._get_graph_image(graph))
+
+
+
+
 
 
 
