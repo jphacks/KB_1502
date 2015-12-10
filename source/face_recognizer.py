@@ -23,6 +23,8 @@ from fig2img import fig2data,fig2img
 import matplotlib.pyplot as plt
 import numpy
 
+import time
+
 face_feature_path = "../training_dataset/haarcascade_frontalface_alt.xml"
 smile_feature_path = "../training_dataset/smiled_04.xml"
 
@@ -242,9 +244,9 @@ if __name__ == '__main__':
     fourcc = cv2.cv.CV_FOURCC('m', 'p', '4', 'v')
 
     graph_drawer = GraphDrawer()
+    graph_drawer.start()
     all_omorosa = OmoroiData()
     all_graph = Graph(color=(1.0,0.0,1.0),ylim=[all_omorosa.omoroi_min-1.0,all_omorosa.omoroi_max+1.0],ylabel="Omorosa")
-
 
     #if os.path.exists('movie.avi'):
     #    os.remove('movie.avi')
@@ -267,21 +269,22 @@ if __name__ == '__main__':
                                  pos = (w-300,h-300))
 
         #graph_drawer内のgraphを更新
-        graph_drawer.init_graphs()
+        graphs =[]
         for face in face_recognizer.faces:
-            graph_drawer.append_graphs(face.graph)
-        graph_drawer.append_graphs(all_graph)
+            graphs.append(face.graph)
+        graphs.append(all_graph)
+        graph_drawer.reprace_graphs(graphs)
         frame_face = graph_drawer.draw_graphs(frame_face)
 
-    #    out.write(np.asarray(frame_face,np.uint8))
+        #out.write(np.asarray(frame_face,np.uint8))
 
-        # 表示
+        #表示
         cv2.imshow('FACE', frame_face)
-
         #if omorosa.omoroi_sequence[-1] > omorosa.omoroi_max*0.9:
         #    _,image = face_recognizer.cap.read()
         #    cv2.imwrite("image.png",image )
         #    break
+
 
         # qを押したら終了
         k = cv2.waitKey(1)
@@ -293,5 +296,6 @@ if __name__ == '__main__':
     #out.release()
     cv2.destroyAllWindows()
 
-    speech_recognizer.stop()
     graph_drawer.stop()
+    speech_recognizer.stop()
+
