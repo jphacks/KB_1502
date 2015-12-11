@@ -5,10 +5,10 @@ import re
 import os
 import sys
 
-file_path = "../training_dataset/nuc/"
+file_path = "../dataset/nuc/"
 LABELED_DATA_NUM = 1000
 
-if os.path.exists("../training_dataset/sentiment/unlabeled_text.txt"):
+if os.path.exists("../dataset/sentiment/unlabeled_text.txt"):
     print "上書きしちゃうので終了"
     sys.exit()
 
@@ -32,8 +32,8 @@ print sentence_num
 index_list = [i for i in xrange(sentence_num)]
 random_index_list = numpy.random.permutation(index_list)
 
-labeled_text = open("../training_dataset/sentiment/labeled_text.txt", "w")
-unlabeled_text = open("../training_dataset/sentiment/unlabeled_text.txt", "w")
+labeled_text = open("../dataset/sentiment/labeled_text.txt", "w")
+unlabeled_text = open("../dataset/sentiment/unlabeled_text.txt", "w")
 for i, random_index in enumerate(random_index_list):
     sentence = sentences[random_index]
     if i < LABELED_DATA_NUM:

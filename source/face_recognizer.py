@@ -27,8 +27,8 @@ import numpy
 
 import time
 
-face_feature_path = "../training_dataset/haarcascade_frontalface_alt.xml"
-smile_feature_path = "../training_dataset/smiled_04.xml"
+face_feature_path = "../dataset/haarcascade_frontalface_alt.xml"
+smile_feature_path = "../dataset/smiled_04.xml"
 
 def _rect_parallel_translation(lrect,translation):
     lrect[0:2] = [lrect[0]+translation[0],lrect[1]+translation[1]]

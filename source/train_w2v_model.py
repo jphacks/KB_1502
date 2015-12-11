@@ -2,18 +2,15 @@
 
 import cPickle
 from gensim.models import Word2Vec
-from preprocessing import rawtext2sentences,sentences2divsentences
+from preprocessing import *
 
 print "transforming rawtext -> sentences"
 rawtext2sentences()
 print "transforming sentences -> divided_sentences(wakachigaki)"
-sentences2divsentences()
+sentences2divsentences("unlabeled_sentences")
+load_dir_path = "../dataset/sentences_divided/"
 
-load_dir_path = "../training_dataset/sentences_divided/"
-all_sentences = []
-for i in xrange(1,130):
-    sentences = cPickle.load(open(load_dir_path + "sentences_divided" + str(i) + ".pkl","rb"))
-    all_sentences.extend(sentences)
+sentences = cPickle.load(open(load_dir_path + "unlabeled_sentences.pkl","rb"))
 
 savefilename = "w2v_model"
 
@@ -22,9 +19,9 @@ savefilename = "w2v_model"
 #worker:並列ワーカー数
 
 print "training word2vec model"
-w2v_model = Word2Vec(all_sentences,min_count=10,size=200,workers=4)
+w2v_model = Word2Vec(sentences,min_count=20,size=400,workers=4)
 
-w2v_model.save("../training_dataset/" + savefilename )
+w2v_model.save("../dataset/" + savefilename )
 
 
 
