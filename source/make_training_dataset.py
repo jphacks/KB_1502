@@ -2,6 +2,7 @@
 
 import cPickle
 import numpy
+from preprocessing import remove_short_sentences
 from sen2vec import Sen2VecByWord2Vec,Sen2VecByDoc2Vec
 
 load_dir_path = "../dataset/sentences_divided/"

@@ -17,14 +17,13 @@ load_dir_path = "../dataset/sentences_divided/"
 
 sentences = cPickle.load(open(load_dir_path + "unlabeled_sentences.pkl","rb"))
 
-
 #word2vec学習
 print "training word2vec model"
 savefilename = "w2v_model"
 #size:隠れそうのニューロンの数
 #min_count:学習に使う単語の頻度のスレショルド
 #worker:並列ワーカー数
-w2v_model = Word2Vec(min_count=20,size=300,workers=4,window=7)
+w2v_model = Word2Vec(min_count=20,size=300,workers=4,window=8)
 w2v_model.build_vocab(sentences)
 for epoch in xrange(50):
     print epoch

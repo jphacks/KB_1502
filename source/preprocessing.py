@@ -103,9 +103,16 @@ def sentences2divsentences(filename):
     cPickle.dump(sentences_divided, open(save_dir_path + filename + '.pkl', "wb"))
     sentences.close()
 
-
-
-
+def remove_short_sentences(sentences,len_threshold=10):
+    print "len(sentences) before removing short sentences" + str(len(sentences))
+    index = 0
+    while index < len(sentences):
+        sentence = sentences[index]
+        if(len(sentence)<len_threshold):
+            del sentences[index]
+        else:
+            index += 1
+    print "len(sentences) after removing short sentences" + str(len(sentences) )
 
 
 
