@@ -69,7 +69,7 @@ class GraphDrawer(object):
             if graph.image is not None:
                 box = (graph.pos[0],graph.pos[1],graph.pos[0]+graph.boxsize[0],graph.pos[1]+graph.boxsize[1])
                 org_img.paste(graph.image,box)
-        return copy.copy(np.asarray(org_img))
+        return np.asarray(org_img)
 
     def plot_routine(self):
         while not self.stop_event.is_set():
