@@ -223,8 +223,7 @@ class FaceRecognizer(object):
             face.geoinfo = geoinfo
             # geoinfoに対応する領域の画像を取得、faceに保存
             # 顔画像の処理
-            x1, y1 = geoinfo.coordinates[0]
-            x2, y2 = geoinfo.coordinates[1]
+            (x1, y1), (x2, y2) = geoinfo.coordinates
             face_image = np.asarray(image.crop((x1, y1, x2, y2)))
             face.face_images.add_face_image(face_image)
             # 口元の画像の処理　領域の大きさは決め打ち
@@ -317,7 +316,7 @@ if __name__ == '__main__':
     #    os.remove('movie.avi')
     #out = cv2.VideoWriter('movie.avi',fourcc,7.5,(w,h))
 
-    counter = 0
+    # counter = 0
     while(True):
 
         # 動画ストリームからフレームを取得
@@ -363,9 +362,9 @@ if __name__ == '__main__':
         if k == ord('q'):
             break
 
-        counter += 1
-        if counter > 60:
-            break
+        # counter += 1
+        # if counter > 60:
+        #     break
 
 
     capture.release()
