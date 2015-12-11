@@ -69,7 +69,7 @@ class FaceRecognizer(object):
 
         return faces
 
-    def update(self, speech, min_size=(200, 200)):
+    def update(self, speech, recogflg, min_size=(200, 200)):
         """
         顔を四角で囲うメソッド.
         input
@@ -148,7 +148,8 @@ class FaceRecognizer(object):
                 # 顔の下半分の領域から口を含む矩形を決め打ちで表示
                 w = x2 - x1
                 h = y2 - y1
-                cv2.rectangle(enclosed_faces, (x1 + int(w * 0.25), y1 + int(h * 0.3)),
+                if(recogflg):
+                    cv2.rectangle(enclosed_faces, (x1 + int(w * 0.25), y1 + int(h * 0.3)),
                               (x2 - int(w * 0.25), y2 - int(h * 0.1)), (255, 0, 255), thickness=3)
 
             cv2.rectangle(enclosed_faces,
@@ -309,9 +310,10 @@ if __name__ == '__main__':
 
         # 動画ストリームからフレームを取得
         speech = speech_recognizer.get_speech()
-
+        recogflg = speech_recognizer.recogflg
+        print "uwaaaaaaaaa-----  " + str(recogflg)
         # frameで切り取り画像を受け取る
-        frame_face = face_recognizer.update(speech)
+        frame_face = face_recognizer.update(speech,recogflg)
 
 
         all_omorosa.update_omoroi_sequence(face_recognizer.get_mean_of_smiles(),int( not (speech == "")))

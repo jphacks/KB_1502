@@ -15,6 +15,8 @@ import sys
 import numpy as np
 import cv2
 
+from collections import deque
+
 # OpenCV 2.4.9 使用できるDetector,Extractor,Matcher[http://symfoware.blog68.fc2.com/blog-entry-1523.html]
 # 検出器のアルゴリズム
 detectors = ['FAST','ORB','BRISK','MSER','GFTT','HARRIS','Dense', 'SIFT', 'SURF']
@@ -109,7 +111,7 @@ class FaceHistories(object):
     FaceFeaturesとFaceのインスタンスの２つのデータのタプルの配列を持つ
     """
     def __init__(self):
-        self.histories = []
+        self.histories = deque(maxlen=3)
         self.feature_settings = FeatureSettings('Dense', 'BRISK', 'BruteForce-Hamming')
 
     def get_history(self, face_image, face):

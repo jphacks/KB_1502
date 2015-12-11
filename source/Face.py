@@ -30,7 +30,7 @@ class FaceImageArray(object):
     """
 
     # 保存する顔画像の最大枚数。多分そこまで、測度に影響はないと思う。多いほうが精度は高いと思う。
-    max_image_number = 7
+    max_image_number = 10
     # この枚数より保存数が小さい時は、カメラの前にいる時間が短すぎるので、履歴の対象から除外する
     min_image_number = 3
 
@@ -57,7 +57,7 @@ class MouthImageArray(object):
     連続する２つの画像をそれぞれ比較して、変化量の合計が一番大きい人物が話しているとする。
     """
     # 保存する画像の最大数。多すぎると話し終えたのに、まだ話していることになる。調整してね。
-    max_image_number = 5
+    max_image_number = 7
 
     def __init__(self):
         self.images = deque(maxlen=self.max_image_number)

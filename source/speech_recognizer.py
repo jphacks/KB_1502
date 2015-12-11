@@ -31,6 +31,7 @@ class SpeechRecognizer(object):
     def __init__(self):
         self.speech = ""
         self.stop_event = threading.Event()
+        self.recogflg = False
 
     def get_speech(self):
         """
@@ -72,14 +73,13 @@ class SpeechRecognizer(object):
         """
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((host,port))
-        flg = False
         recogouts=''
         while not self.stop_event.is_set():
             recv_data = sock.recv(bufsize)
             if('<RECOGOUT>' in recv_data):
-                flg = True
+                self.recogflg = True
                 recogouts=''
-            if(flg):
+            if(self.recogflg):
                 recogouts += recv_data
 
             if('</RECOGOUT>' in recv_data):
@@ -93,7 +93,7 @@ class SpeechRecognizer(object):
                 print("Recognition results:" + ret)
                 threading.Timer(reset_sec,self.reset_speech).start()
 
-                flg = False
+                self.recogflg = False
 
 
     def stop(self):
