@@ -7,6 +7,7 @@ import math
 import numpy as np
 import os
 from PIL import Image, ImageDraw, ImageFont
+from itertools import product
 
 from speech_recognizer import SpeechRecognizer
 
@@ -174,21 +175,28 @@ class FaceRecognizer(object):
             new_faces:新たにdetectした顔リスト
         """
         #今現在トラッキングしている顔座標と新たに取得した顔座標同士の距離を計算
-        distances_matrix = []
-        for face in faces:
-            distances = []
-            for new_face in new_faces:
-                euc_distance = (face.geoinfo.center[0] - new_face.geoinfo.center[0])**2 \
-                               + (face.geoinfo.center[1] - new_face.geoinfo.center[1])**2
-                distances.append(euc_distance)
-            distances_matrix.append(distances)
+        # distances_matrix = []
+        # for face in faces:
+        #     distances = []
+        #     for new_face in new_faces:
+        #         euc_distance = (face.geoinfo.center[0] - new_face.geoinfo.center[0])**2 \
+        #                        + (face.geoinfo.center[1] - new_face.geoinfo.center[1])**2
+        #         distances.append(euc_distance)
+        #     distances_matrix.append(distances)
+        distances_matrix = np.empty((len(faces), len(new_faces)))
+        for (i, face), (j, new_face) in product(enumerate(faces), enumerate(new_faces)):
+            center = face.geoinfo.center
+            new_center = new_face.geoinfo.center
+            distances_matrix[i, j] = np.sum((v1 - v2) ** 2 for (v1, v2) in zip(center, new_center))
 
-        face_indexes = [ i for i in xrange(len(faces))]
-        new_face_indexes = [ i for i in xrange(len(new_faces))]
+        # face_indexes = [ i for i in xrange(len(faces))]
+        # new_face_indexes = [ i for i in xrange(len(new_faces))]
+        face_indexes = range(len(faces))
+        new_face_indexes = range(len(new_faces))
 
         # O( (顔の数)^3 )の計算量。 O(　(顔の数)^2 log(顔の数) )の計算量にできるが。
-        while(len(face_indexes)>0):
-            if (len(new_face_indexes) == 0):
+        while len(face_indexes)>0:
+            if len(new_face_indexes) == 0:
                 face_indexes.reverse()
                 # トラッキングしていたが顔がなくなったので、消す前に履歴に残す
                 for i in face_indexes:
@@ -199,28 +207,33 @@ class FaceRecognizer(object):
 
                     del faces[i]
                 break
-            min_distance = np.inf
-            for i in xrange(len(face_indexes)):
-                for j in xrange(len(new_face_indexes)):
-                    if ( distances_matrix[face_indexes[i]][new_face_indexes[j]] < min_distance):
-                        min_distance = distances_matrix[face_indexes[i]][new_face_indexes[j]]
-                        min_i = i
-                        min_j = j
-            faces[face_indexes[min_i]].geoinfo = new_faces[new_face_indexes[min_j]].geoinfo
-            # geoinfoに対応する領域の画像を取得、faceに保存
+            # min_distance = np.inf
+            # for i in xrange(len(face_indexes)):
+            #     for j in xrange(len(new_face_indexes)):
+            #         if ( distances_matrix[face_indexes[i]][new_face_indexes[j]] < min_distance):
+            #             min_distance = distances_matrix[face_indexes[i]][new_face_indexes[j]]
+            #             min_i = i
+            #             min_j = j
+            min_distance = np.min(distances_matrix)
+            min_i, min_j = np.where(distances_matrix == min_distance)
+
+            face = faces[face_indexes[min_i]]
             geoinfo = new_faces[new_face_indexes[min_j]].geoinfo
+
+            face.geoinfo = geoinfo
+            # geoinfoに対応する領域の画像を取得、faceに保存
             # 顔画像の処理
             x1, y1 = geoinfo.coordinates[0]
             x2, y2 = geoinfo.coordinates[1]
             face_image = np.asarray(image.crop((x1, y1, x2, y2)))
-            faces[face_indexes[min_i]].face_images.add_face_image(face_image)
+            face.face_images.add_face_image(face_image)
             # 口元の画像の処理　領域の大きさは決め打ち
             w = x2 - x1
             h = (y2 - y1) / 2
             y3 = y1 + h
             mouth_image = np.asarray(image.crop((x1 + int(w * 0.25), y3 + int(h * 0.3),
                                                  x2 - int(w * 0.25), y2 - int(h * 0.1))))
-            faces[face_indexes[min_i]].mouth_images.add_mouth_image(mouth_image)
+            face.mouth_images.add_mouth_image(mouth_image)
 
             del face_indexes[min_i]
             del new_face_indexes[min_j]
@@ -230,13 +243,11 @@ class FaceRecognizer(object):
             print '顔が出てきた'
             new_face = new_faces[j]
             # 顔画像を取得
-            face_image = image.crop((new_face.geoinfo.coordinates[0][0],
-                                     new_face.geoinfo.coordinates[0][1],
-                                     new_face.geoinfo.coordinates[1][0],
-                                     new_face.geoinfo.coordinates[1][1],))
-            face_image_ = np.asarray(face_image)
+            (x1, y1), (x2, y2) = new_face.geoinfo.coordinates
+            face_image = np.asarray(image.crop((x1, y1, x2, y2)))
+
             # 履歴に照らし合わせてfaceを追加
-            faces.append(self.histories.get_history(face_image_, new_face))
+            faces.append(self.histories.get_history(face_image, new_face))
             # faces.append(new_faces[j])
 
     def write_speech(self, image, coordinates, length, speech, label):
