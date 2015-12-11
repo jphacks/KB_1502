@@ -241,7 +241,7 @@ if __name__=='__main__':
     ul_x = x[numpy.where(y == 0.5)[0]].astype(theano.config.floatX)
 
     num_samples = l_x.shape[0]
-    num_groups = 2
+    num_groups = 10
     print "chance level :" + str(1-numpy.mean(l_y))
 
     accs = numpy.zeros(num_groups)
