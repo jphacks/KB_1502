@@ -2,7 +2,7 @@
 
 import cPickle
 from gensim.models import Word2Vec
-from n_parser import rawtext2sentences,sentences2divsentences
+from preprocessing import rawtext2sentences,sentences2divsentences
 
 print "transforming rawtext -> sentences"
 rawtext2sentences()
