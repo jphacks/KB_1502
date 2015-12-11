@@ -1,0 +1,6 @@
+[submodule "vat"]
+	path = vat
+	url = https://github.com/takerum/vat/
+[submodule "train_nn/vat"]
+	path = train_nn/vat
+	url = https://github.com/takerum/vat/

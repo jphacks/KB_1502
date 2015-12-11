@@ -27,8 +27,8 @@ import numpy
 
 import time
 
-face_feature_path = "../training_dataset/haarcascade_frontalface_alt.xml"
-smile_feature_path = "../training_dataset/smiled_04.xml"
+face_feature_path = "../dataset/haarcascade_frontalface_alt.xml"
+smile_feature_path = "../dataset/smiled_04.xml"
 
 def _rect_parallel_translation(lrect,translation):
     lrect[0:2] = [lrect[0]+translation[0],lrect[1]+translation[1]]
@@ -306,6 +306,8 @@ if __name__ == '__main__':
     #out = cv2.VideoWriter('movie.avi',fourcc,7.5,(w,h))
 
 
+    count = 0
+
     while(True):
 
         # 動画ストリームからフレームを取得
@@ -334,8 +336,11 @@ if __name__ == '__main__':
 
         #out.write(np.asarray(frame_face,np.uint8))
 
-        #表示
-        cv2.imshow('FACE', frame_face)
+        #表示 なぜか初期は
+        if(count > 10):
+            cv2.imshow('FACE', frame_face)
+        else:
+            count += 1
         #if omorosa.omoroi_sequence[-1] > omorosa.omoroi_max*0.9:
         #    _,image = face_recognizer.cap.read()
         #    cv2.imwrite("image.png",image )
