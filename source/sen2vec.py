@@ -1,15 +1,15 @@
 
 import numpy
 from gensim.models import Word2Vec,Doc2Vec
-from gensim.models.doc2vec import TaggedDocument
 
 
-model_filename = "../dataset/w2v_model"
+
+w2v_model_filename = "../dataset/w2v_model"
 
 class Sen2VecByWord2Vec(object):
 
     def __init__(self):
-        self.w2v_model = Word2Vec.load(model_filename)
+        self.w2v_model = Word2Vec.load(w2v_model_filename)
 
     def _w2v(self,word):
         try:
@@ -36,15 +36,24 @@ class Sen2VecByWord2Vec(object):
 
         return sens
 
+
+d2v_model_filename = "../dataset/d2v_model"
+
 class Sen2VecByDoc2Vec(object):
 
     def __init__(self):
-        self.d2v_model = Doc2Vec.load(model_filename)
+        self.d2v_model = Word2Vec.load(d2v_model_filename)
+
+    def _d2v(self,word):
+        try:
+            return self.d2v_model[word]
+        except:
+            return None
 
     def sen2vec(self,sentence):
         distributed_words = []
         for word in sentence:
-            ret = self._w2v(word)
+            ret = self._d2v(word)
             if ret is not None:
                 distributed_words.append(ret)
 
@@ -55,7 +64,9 @@ class Sen2VecByDoc2Vec(object):
 
     def sens2vec(self,sentences):
         sens = []
-        for sentence in sentences:
+        for i,sentence in enumerate(sentences):
+            print str(i) + "\r",
             sens.append(self.sen2vec(sentence))
+        print ""
 
         return sens

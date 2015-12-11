@@ -15,7 +15,7 @@ def make_sure_path_exists(path):
             if exception.errno != errno.EEXIST:
                 raise
 
-def divide_sentences_and_label():
+def divide_sentence_and_label():
     load_dir_path = "../dataset/sentiment/"
     save_sentences_dir_path = "../dataset/sentences/"
     save_trdata_dir_path = "../dataset/training_dataset/"
@@ -31,7 +31,7 @@ def divide_sentences_and_label():
         labels.append(label)
         sentences.writelines(sentence)
         inline = labeled_text_file.readline()
-    cPickle.dump(numpy.array(labels).astype("float32"),open(save_trdata_dir_path + "labels.pkl","wb"))
+    cPickle.dump(labels,open(save_trdata_dir_path + "labels.pkl","wb"))
 
 
 def rawtext2sentences():
@@ -60,12 +60,15 @@ def remove_specific_symbols(sentence_divided):
     i = 0
     while(i < len(sentence_divided)):
         w = sentence_divided[i]
-        if w is "<" or w is "(":
-            j = i + 1
+        if w == "＜" or w == "（":
+            print w
+            j = i
             while(j < len(sentence_divided)):
                 w = sentence_divided[j]
-                if w is ">" or w is ")":
+                if w == "＞" or w == "）" or j == len(sentence_divided)-1:
                     del sentence_divided[i:j+1]
+                    print "deleted"
+                    break
                 else:
                     j += 1
         else:
