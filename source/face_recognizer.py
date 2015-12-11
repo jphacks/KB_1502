@@ -318,7 +318,7 @@ if __name__ == '__main__':
         frame_face = face_recognizer.update(speech,recogflg)
 
 
-        all_omorosa.update_omoroi_sequence(face_recognizer.get_mean_of_smiles(),int( not (speech == "")))
+        all_omorosa.update_omoroi_sequence(face_recognizer.get_mean_of_smiles())
         # 盛り上がり度の部分時系列を取得
         length = 20
         all_omoroi_subsequence = all_omorosa.get_subsequence(all_omorosa.omoroi_sequence,length)

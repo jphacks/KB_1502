@@ -126,7 +126,7 @@ class Face(object):
         self.mouth_images = MouthImageArray()
 
     def update(self):
-        self.omoroi_data.update_omoroi_sequence(self.is_smiling,0)
+        self.omoroi_data.update_omoroi_sequence(self.is_smiling)
         length = 20
         omoroi_subsequence = self.omoroi_data.get_subsequence(self.omoroi_data.omoroi_sequence,length)
         pos = (self.geoinfo.coordinates[0][0]+self.geoinfo.length[0],

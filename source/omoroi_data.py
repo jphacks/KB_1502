@@ -29,10 +29,9 @@ class OmoroiData(object):
         self.speed = min(max(self.speed,self.speed_min),self.speed_max)
         return self.speed
 
-    def update_omoroi_sequence(self,mean_of_smile,loudness):
-        coeff_loudness = 0.25
+    def update_omoroi_sequence(self,mean_of_smile):
         power = self.k * ( mean_of_smile - self.g)
-        pos = self._update_pos( coeff_loudness*loudness + self._update_speed(power=power)) + numpy.random.normal(0,0.1)
+        pos = self._update_pos( self._update_speed(power=power)) + numpy.random.normal(0,0.1)
         self.omoroi_sequence.append(pos)
 
     def get_subsequence(self, sequence, length):
