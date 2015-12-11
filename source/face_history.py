@@ -45,13 +45,12 @@ class FaceFeatures(object):
         """
         face_imageが複数枚(list形式）の場合でもOK
         """
-        self.features = []
 
         # 顔画像を登録
         if isinstance(face_image, list):
-            for image in face_image:
-                self.register_face_image(image, feature_settings)
+            self.features = self._register_multiple_face_images(face_image, feature_settings)
         else:
+            self.features = list()
             self.register_face_image(face_image, feature_settings)
 
     def _compute_features(self, face_image, feature_settings):
@@ -80,6 +79,14 @@ class FaceFeatures(object):
         # マッチングに必要なデータはdiscription_dataだけなんだけど、あったほうが便利だと思うので、保存しておく
         self.features.append((face_image, keypoint_data, discription_data))
 
+    def _compute_features_helper(self, face_image, feature_settings):
+        """_compute_featuresの戻り値にface_imageを加えるだけの関数"""
+        keypoint_data, discription_data = self._compute_features(face_image, feature_settings)
+        return face_image, keypoint_data, discription_data
+
+    def _register_multiple_face_images(self, face_images, feature_settings):
+        return [self._compute_features_helper(face_image, feature_settings) for face_image in face_images]
+
     def compare_face_image(self, face_image, feature_settings):
         """
         カメラで新たに得られた画像の人物がここに登録されている人物と同じであるかを判定する
@@ -88,19 +95,29 @@ class FaceFeatures(object):
         # キーポイントの特徴量を計算
         keypoint_data, discription_data = self._compute_features(face_image, feature_settings)
 
-        # print 'matching data type: %s %s' % (type(discription_data), discription_data.dtype)
         matching_results = [feature_settings.matcher.match(discription, discription_data)
                             for (_, _, discription) in self.features]
 
         # 同一人物であるかを判定する
         # 判定方法、しきい値はいい感じに改良してね。
-        min_mean = sys.float_info.max
-        for result in matching_results:
-            distances = [m.distance for m in result]
-            min_mean = min((sum(distances) / len(distances)), min_mean)
+        min_mean = np.min([self._compute_distance(result) for result in matching_results])
         print 'the distance is %f' % min_mean
         return min_mean < 100
 
+    def _compute_distance(self, matching_result):
+        """
+        マッチングの結果をスカラー（距離）にする
+
+        計算方法は改良してね
+        """
+        distances = [m.distance for m in matching_result]
+        return np.sum(distances) / len(distances)
+
+
+def MapHelper(args):
+    return args[0](*args[1:])
+def TestFunct(x):
+    return x
 
 class FaceHistories(object):
     """

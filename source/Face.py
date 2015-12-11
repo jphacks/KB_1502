@@ -45,7 +45,8 @@ class FaceImageArray(object):
             self.images.append(face_image)
 
     def clear_face_images(self):
-        self.images = []
+        # clear関数はまだない
+        del self.images[:]
 
     def is_enough_images(self):
         return len(self.images) >= self.min_image_number

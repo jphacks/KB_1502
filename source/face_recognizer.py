@@ -95,9 +95,10 @@ class FaceRecognizer(object):
         color_smile = (0, 0, 255)
 
         # 新しい顔
-        new_faces = []
-        for face_rect in face_rects:
-            new_faces.append(Face(geoinfo=GeoInfo(face_rect)))
+        # new_faces = []
+        # for face_rect in face_rects:
+        #     new_faces.append(Face(geoinfo=GeoInfo(face_rect)))
+        new_faces = [Face(geoinfo=GeoInfo(face_rect)) for face_rect in face_rects]
 
         image_ = Image.fromarray(np.uint8(image))
 
@@ -106,14 +107,15 @@ class FaceRecognizer(object):
 
         # 音声信号のない場合は、発話者の判定処理をスキップする
         if True:
-            speaker_index = -1
-            value = 0
-            for i, face in enumerate(self.faces):
-                tmp = face.mouth_images.compute_variability()
-                if tmp > value:
-                    speaker_index = i
-                    value = tmp
+            # 音声信号のある場合
+            if len(self.faces) > 0:
+                variations = [face.mouth_images.compute_variability() for face in self.faces]
+                speaker_index = np.argmin(variations)
+                print '<speaker variability>=%s' % variations
+            else:
+                speaker_index = -1
         else:
+            # 音声信号のない場合
             speaker_index = -1
 
         for i, face in enumerate(self.faces):
@@ -304,7 +306,7 @@ if __name__ == '__main__':
     #    os.remove('movie.avi')
     #out = cv2.VideoWriter('movie.avi',fourcc,7.5,(w,h))
 
-
+    counter = 0
     while(True):
 
         # 動画ストリームからフレームを取得
@@ -348,6 +350,10 @@ if __name__ == '__main__':
         # qを押したら終了
         k = cv2.waitKey(1)
         if k == ord('q'):
+            break
+
+        counter += 1
+        if counter > 60:
             break
 
 
