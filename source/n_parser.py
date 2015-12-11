@@ -38,6 +38,21 @@ def rawtext2sentences():
 
         text.close()
 
+def remove_specific_symbols(sentence_divided):
+    i = 0
+    while(i < len(sentence_divided)):
+        w = sentence_divided[i]
+        if w is "<" or w is "(":
+            j = i + 1
+            while(j < len(sentence_divided)):
+                w = sentence_divided[j]
+                if w is ">" or w is ")":
+                    del sentence_divided[i:j+1]
+                else:
+                    j += 1
+        else:
+            i += 1
+
 def sentences2divsentences():
     def make_sure_path_exists(path):
         try:
@@ -62,9 +77,15 @@ def sentences2divsentences():
             sentence_divided = t.parse(line).split(" ")
             #後ろの3文字[。,\r,\n]は除去
             sentence_divided = sentence_divided[:-3]
+            remove_specific_symbols(sentence_divided)
             sentences_divided.append(sentence_divided)
             line = sentences.readline()
         cPickle.dump(sentences_divided, open(save_dir_path + "sentences_divided%d.pkl" % doc_index,"wb"))
         sentences.close()
+
+
+
+
+
 
 

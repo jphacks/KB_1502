@@ -305,6 +305,8 @@ if __name__ == '__main__':
     #out = cv2.VideoWriter('movie.avi',fourcc,7.5,(w,h))
 
 
+    count = 0
+
     while(True):
 
         # 動画ストリームからフレームを取得
@@ -332,8 +334,11 @@ if __name__ == '__main__':
 
         #out.write(np.asarray(frame_face,np.uint8))
 
-        #表示
-        cv2.imshow('FACE', frame_face)
+        #表示 なぜか初期は
+        if(count > 10):
+            cv2.imshow('FACE', frame_face)
+        else:
+            count += 1
         #if omorosa.omoroi_sequence[-1] > omorosa.omoroi_max*0.9:
         #    _,image = face_recognizer.cap.read()
         #    cv2.imwrite("image.png",image )
